@@ -33,5 +33,6 @@ func (s *Server) Run() error {
 
 func (s *Server) registerRoutes() {
 	s.engine.GET("/health", health.CheckHandler())
+	s.engine.GET("/courses", courses.RetrieveCourses(s.courseRepository))
 	s.engine.POST("/courses", courses.CreateHandler(s.courseRepository))
 }
