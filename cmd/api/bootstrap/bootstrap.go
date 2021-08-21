@@ -12,11 +12,11 @@ const (
 	host = "localhost"
 	port = 8080
 
-	dbUser = "codely"
-	dbPass = "codely"
+	dbUser = "root"
+	dbPass = "password"
 	dbHost = "localhost"
 	dbPort = "3306"
-	dbName = "codely"
+	dbName = "codely_courses"
 )
 
 func Run() error {
@@ -27,6 +27,7 @@ func Run() error {
 	}
 
 	courseRepository := mysql.NewCourseRepository(db)
+
 	srv := server.New(host, port, courseRepository)
 	return srv.Run()
 }
