@@ -3,8 +3,10 @@ package bootstrap
 import (
 	"database/sql"
 	"fmt"
+	"github.com/artemidas/hexagonal-http-api/internal/creating"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/server"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/storage/mysql"
+	"github.com/artemidas/hexagonal-http-api/internal/retrieving"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -28,6 +30,9 @@ func Run() error {
 
 	courseRepository := mysql.NewCourseRepository(db)
 
-	srv := server.New(host, port, courseRepository)
+	creatingCourseService := creating.NewCourseService(courseRepository)
+	retrievingCourseService := retrieving.NewCourseService(courseRepository)
+
+	srv := server.New(host, port, creatingCourseService, retrievingCourseService)
 	return srv.Run()
 }

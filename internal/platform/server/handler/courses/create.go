@@ -1,7 +1,9 @@
 package courses
 
 import (
+	"errors"
 	mooc "github.com/artemidas/hexagonal-http-api/internal"
+	"github.com/artemidas/hexagonal-http-api/internal/creating"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -12,7 +14,7 @@ type createRequest struct {
 	Duration string `json:"duration" binding:"required"`
 }
 
-func CreateHandler(courseRepository mooc.CourseRepository) gin.HandlerFunc {
+func CreateHandler(creatingCourseService creating.CourseService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req createRequest
 		if err := ctx.BindJSON(&req); err != nil {
@@ -20,15 +22,17 @@ func CreateHandler(courseRepository mooc.CourseRepository) gin.HandlerFunc {
 			return
 		}
 
-		course, err := mooc.NewCourse(req.ID, req.Name, req.Duration)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, err.Error())
-			return
-		}
+		err := creatingCourseService.CreateCourse(ctx, req.ID, req.Name, req.Duration)
 
-		if err := courseRepository.Save(ctx, course); err != nil {
-			ctx.JSON(http.StatusInternalServerError, err.Error())
-			return
+		if err != nil {
+			switch {
+			case errors.Is(err, mooc.ErrInvalidCourseID),
+				errors.Is(err, mooc.ErrMissingCourseName),
+				errors.Is(err, mooc.ErrMissingCourseDuration):
+				ctx.JSON(http.StatusBadRequest, err.Error())
+			default:
+				ctx.JSON(http.StatusInternalServerError, err.Error())
+			}
 		}
 
 		ctx.Status(http.StatusCreated)
