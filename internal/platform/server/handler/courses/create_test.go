@@ -3,7 +3,7 @@ package courses
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/artemidas/hexagonal-http-api/internal/platform/storage/storagemocks"
+	"github.com/artemidas/hexagonal-http-api/kit/command/commandmocks"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,14 +18,17 @@ const (
 )
 
 func TestHandler_Create(t *testing.T) {
-	courseRepository := new(storagemocks.CourseRepository)
-	courseRepository.
-		On("Save", mock.Anything, mock.AnythingOfType("mooc.Course")).
-		Return(nil)
+	commandBus := new(commandmocks.Bus)
+	commandBus.
+		On(
+			"Dispatch",
+			mock.Anything,
+			mock.AnythingOfType("creating.CourseCommand"),
+		).Return(nil)
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.POST(endpoint, CreateHandler(courseRepository))
+	r.POST(endpoint, CreateHandler(commandBus))
 
 	t.Run("given an invalid request it returns 400", func(t *testing.T) {
 		createCourseReq := createRequest{

@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/artemidas/hexagonal-http-api/internal/creating"
+	"github.com/artemidas/hexagonal-http-api/internal/platform/bus/inmemory"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/server"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/storage/mysql"
-	"github.com/artemidas/hexagonal-http-api/internal/retrieving"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -28,11 +28,17 @@ func Run() error {
 		return err
 	}
 
+	var (
+		commandBus = inmemory.NewCommandBus()
+	)
 	courseRepository := mysql.NewCourseRepository(db)
 
 	creatingCourseService := creating.NewCourseService(courseRepository)
-	retrievingCourseService := retrieving.NewCourseService(courseRepository)
+	//retrievingCourseService := retrieving.NewCourseService(courseRepository)
 
-	srv := server.New(host, port, creatingCourseService, retrievingCourseService)
+	createCourseCommandHandler := creating.NewCourseCommandHandler(creatingCourseService)
+	commandBus.Register(creating.CourseCommandType, createCourseCommandHandler)
+
+	srv := server.New(host, port, commandBus)
 	return srv.Run()
 }

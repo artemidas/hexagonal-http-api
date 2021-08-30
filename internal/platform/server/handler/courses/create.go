@@ -4,6 +4,7 @@ import (
 	"errors"
 	mooc "github.com/artemidas/hexagonal-http-api/internal"
 	"github.com/artemidas/hexagonal-http-api/internal/creating"
+	"github.com/artemidas/hexagonal-http-api/kit/command"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -14,7 +15,7 @@ type createRequest struct {
 	Duration string `json:"duration" binding:"required"`
 }
 
-func CreateHandler(creatingCourseService creating.CourseService) gin.HandlerFunc {
+func CreateHandler(commandBus command.Bus) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req createRequest
 		if err := ctx.BindJSON(&req); err != nil {
@@ -22,7 +23,11 @@ func CreateHandler(creatingCourseService creating.CourseService) gin.HandlerFunc
 			return
 		}
 
-		err := creatingCourseService.CreateCourse(ctx, req.ID, req.Name, req.Duration)
+		err := commandBus.Dispatch(ctx, creating.NewCourseCommand(
+			req.ID,
+			req.Name,
+			req.Duration,
+		))
 
 		if err != nil {
 			switch {
