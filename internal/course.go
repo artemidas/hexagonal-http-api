@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/artemidas/hexagonal-http-api/kit/event"
 	"github.com/google/uuid"
 )
 
@@ -78,6 +79,8 @@ type Course struct {
 	id       CourseID
 	name     CourseName
 	duration CourseDuration
+
+	events []event.Event
 }
 
 func NewCourse(id, name, duration string) (Course, error) {
@@ -96,21 +99,39 @@ func NewCourse(id, name, duration string) (Course, error) {
 		return Course{}, err
 	}
 
-	return Course{
+	course := Course{
 		id:       idVO,
 		name:     nameVO,
 		duration: durationVO,
-	}, nil
+	}
+	course.Record(NewCourseCreatedEvent(idVO.String(), nameVO.String(), durationVO.String()))
+	return course, nil
 }
 
+// ID returns the course unique identifier
 func (c Course) ID() CourseID {
 	return c.id
 }
 
+// Name returns the course name
 func (c Course) Name() CourseName {
 	return c.name
 }
 
+// Duration returns the course duration
 func (c Course) Duration() CourseDuration {
 	return c.duration
+}
+
+// Record records a new domain event
+func (c *Course) Record(evt event.Event) {
+	c.events = append(c.events, evt)
+}
+
+// PullEvents returns all the recorded domain events
+func (c Course) PullEvents() []event.Event {
+	evt := c.events
+	c.events = []event.Event{}
+
+	return evt
 }
