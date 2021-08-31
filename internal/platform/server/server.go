@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/server/handler/courses"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/server/handler/health"
+	"github.com/artemidas/hexagonal-http-api/internal/platform/server/middleware/logging"
+	"github.com/artemidas/hexagonal-http-api/internal/platform/server/middleware/recovery"
 	"github.com/artemidas/hexagonal-http-api/kit/command"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -68,6 +70,8 @@ func serverContext(ctx context.Context) context.Context {
 }
 
 func (s *Server) registerRoutes() {
+	s.engine.Use(recovery.Middleware(), logging.Middleware())
+
 	s.engine.GET("/health", health.CheckHandler())
 	//s.engine.GET("/courses", courses.RetrieveCourses(s.rs))
 	s.engine.POST("/courses", courses.CreateHandler(s.commandBus))
