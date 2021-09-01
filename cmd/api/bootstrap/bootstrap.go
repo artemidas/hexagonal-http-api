@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	mooc "github.com/artemidas/hexagonal-http-api/internal"
 	"github.com/artemidas/hexagonal-http-api/internal/creating"
+	"github.com/artemidas/hexagonal-http-api/internal/increasing"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/bus/inmemory"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/server"
 	"github.com/artemidas/hexagonal-http-api/internal/platform/storage/mysql"
@@ -34,14 +36,21 @@ func Run() error {
 
 	var (
 		commandBus = inmemory.NewCommandBus()
+		eventBus   = inmemory.NewEventBus()
 	)
 	courseRepository := mysql.NewCourseRepository(db, dbTimeout)
 
-	creatingCourseService := creating.NewCourseService(courseRepository)
+	creatingCourseService := creating.NewCourseService(courseRepository, eventBus)
+	increasingCourseService := increasing.NewCourseCounterService()
 	//retrievingCourseService := retrieving.NewCourseService(courseRepository)
 
 	createCourseCommandHandler := creating.NewCourseCommandHandler(creatingCourseService)
 	commandBus.Register(creating.CourseCommandType, createCourseCommandHandler)
+
+	eventBus.Subscribe(
+		mooc.CourseCreatedEventType,
+		creating.NewIncreaseCoursesCounterOnCourseCreated(increasingCourseService),
+	)
 
 	ctx, srv := server.New(context.Background(), host, port, shutdownTimeout, commandBus)
 	return srv.Run(ctx)
